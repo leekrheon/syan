@@ -60,10 +60,10 @@ addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
 
 // 캐러셀 (픽셀 그래픽 + 화살표 + 점 + 캡션, 자동 넘김, 드래그/스와이프)
-document.querySelectorAll('.band').forEach((band) => {
+document.querySelectorAll('.band, .hero').forEach((band) => {
   const cv = band.querySelector('canvas');
-  const n = cv.dataset.words.split('|').length;
-  const holds = cv.dataset.words.split('|').map((_, k) => Number((cv.dataset.hold || '').split(',')[k]) || 3500);
+  const n = cv.pixCount ? cv.pixCount() : cv.dataset.words.split('|').length + (cv.dataset.src ? 1 : 0);
+  const holds = Array.from({ length: n }, (_, k) => k).map((k) => Number((cv.dataset.hold || '').split(',')[k]) || 3500);
   const cycle = holds.reduce((a, b) => a + b, 0);
   let i = -1, hovering = false, manual = 0, t0 = performance.now(), wasVisible = false;
   const show = (k) => { k = ((k % n) + n) % n; if (k === i) return; i = k; cv.dispatchEvent(new CustomEvent('pix:go', { detail: k })); };
@@ -132,8 +132,10 @@ const measure = () => {
 const tick = () => {
   if (shown < target) { const to = reduceMotion ? target : Math.min(target, shown + SPEED); for (; shown < to; shown++) all[shown].classList.add('on'); }
   else if (shown > target) { const to = reduceMotion ? target : Math.max(target, shown - SPEED * 1.5); for (; shown > to; shown--) all[shown - 1].classList.remove('on'); shown = Math.round(shown); }
-  const cur = shown > 0 && shown !== target ? all[shown - 1] : null;
+  // 마지막으로 써진 글자 뒤에 커서. 쓰는 중엔 켜져 있고, 문장이 끝나 멈추면 깜빡인다
+  const cur = shown > 0 ? all[shown - 1] : null;
   if (lastCur !== cur) { lastCur && lastCur.classList.remove('cur'); cur && cur.classList.add('cur'); lastCur = cur; }
+  document.documentElement.classList.toggle('typing', shown !== target);
   requestAnimationFrame(tick);
 };
 addEventListener('scroll', measure, { passive: true });

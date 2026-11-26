@@ -144,8 +144,10 @@
         const mdx = p.x - mouse.x, mdy = p.y - mouse.y, md = Math.sqrt(mdx * mdx + mdy * mdy);
         const near = md < 170 ? 1 - md / 170 : 0;
         tw = Math.min(0.7, tw + sheen * 0.35 * tone + near * 0.3 * tone);
-        const silver = Math.min(1, tone * 0.8 + near * 0.5);
-        const base = [10 + 140 * silver, 10 + 146 * silver, 12 + 156 * silver];      // ink → #969ca8
+        // 픽셀마다 검정 ↔ 회색을 천천히 오가며 색이 흐른다 (물결처럼 위치에 따라 박자가 어긋남)
+        const flow = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.0011 * (0.6 + p.seed * 0.9) + p.seed * 40 + (p.tx / W) * 5 - (p.ty / H) * 3);
+        const silver = Math.min(1, flow * 0.85 + near * 0.3);
+        const base = [10 + 150 * silver, 10 + 154 * silver, 12 + 160 * silver];      // 검정 → #a0a4ac
         const hi = [214, 219, 226];                                                  // 밝은 은색
         const c = base.map((v, k) => Math.round(v + (hi[k] - v) * tw));
         ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${a})`;

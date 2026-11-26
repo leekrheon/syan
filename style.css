@@ -261,3 +261,10 @@ html.menu-open .top { background: transparent !important; }
 .card button[type=submit]:hover { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 #bbb; }
 @media (max-width: 640px) { .card { padding: 24px 18px; box-shadow: 5px 5px 0 var(--ink); } }
 .apply { background: #efefef !important; }
+/* 제출 카드: 검은 그림자 상자 제거, 담백하게 */
+.card { box-shadow: none !important; border: 1px solid var(--line) !important; }
+.card button[type=submit]:hover { box-shadow: none; transform: none; opacity: .85; }
+/* 타자 커서: 작은 세로 네모, 멈추면 깜빡깜빡 */
+.ch.cur::after { right: auto; left: calc(100% + 2px); top: .18em; width: .48em; height: 1.08em; background: var(--ink); animation: caret 1s steps(1) infinite; }
+html.typing .ch.cur::after { animation: none; opacity: 1; }
+.ch.cur::after { width: 3px; top: 50%; height: 1.3em; transform: translateY(-50%); left: calc(100% + 2px); }
