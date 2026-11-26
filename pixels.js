@@ -66,10 +66,11 @@
       if (!W || !H) return;
       canvas.width = W * dpr; canvas.height = H * dpr;
       if (img) {
-        step = Math.max(3, Math.round(W / 320));
+        // 아래 SYAN 그래픽(높이 52vh)과 같은 픽셀 크기·글자 크기로 맞춰 움직임을 통일
+        const bh = Math.min(H, innerHeight * 0.52), oy = (H - bh) / 2;
+        step = Math.max(4, Math.round(Math.min(W, bh) / 95));
         const s = sampleImage(img, W, H, step, parseFloat(canvas.dataset.split) || 0);
-        // 서강젊은광고인네트워크 → SYAN → … 흩어졌다 다시 모이며 바뀐다
-        shapes = [s, ...words.map((wd) => sampleWord(wd, W, H * 0.5, step).map(([x, y]) => [x, y + H * 0.25]))];
+        shapes = [s, ...words.map((wd) => sampleWord(wd, W, bh, step).map(([x, y]) => [x, y + oy]))];
       } else {
         step = Math.max(4, Math.round(Math.min(W, H) / 95));
         shapes = words.map((wd) => sampleWord(wd, W, H, step));
@@ -163,7 +164,13 @@
     if (mode !== 'manual') canvas.addEventListener('click', () => setShape((cur + 1) % shapes.length));
 
     new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(canvas);
-    new ResizeObserver(() => build()).observe(canvas);
+    // 가로폭이 바뀔 때만 다시 그린다 (폰 주소창으로 높이만 바뀔 때 그림이 튀지 않게)
+    let lastW = 0, lastH = 0;
+    new ResizeObserver(() => {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (w === lastW && Math.abs(h - lastH) < 120) return;
+      lastW = w; lastH = h; build();
+    }).observe(canvas);
     // 3초마다 다음 모양으로
     if (mode === 'cycle' && !reduced) setInterval(() => visible && setShape((cur + 1) % shapes.length), 3000);
     requestAnimationFrame(frame);

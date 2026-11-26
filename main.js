@@ -124,10 +124,21 @@ const all = typers.flatMap((t) => t.chars);
 const ends = []; { let n = 0; typers.forEach((t) => { n += t.chars.length; ends.push(n); }); }
 let shown = 0, target = 0, lastCur = null;
 const SPEED = 4; // 프레임당 글자 수 (≈ 초당 240자)
+// 폰 주소창이 나타났다 사라져도 기준선이 흔들리지 않도록, 화면 높이는 가로폭이 바뀔 때만 갱신
+let vh = document.documentElement.clientHeight, vw = innerWidth;
+addEventListener('resize', () => { if (innerWidth !== vw) { vw = innerWidth; vh = document.documentElement.clientHeight; } });
 const measure = () => {
-  const line = innerHeight * 0.85;
-  target = 0;
-  typers.forEach((t, k) => { if (t.el.getBoundingClientRect().top < line) target = ends[k]; });
+  // 히스테리시스: 화면 85% 선을 넘으면 쓰고, 화면 아래로 완전히 내려가야만 지운다
+  // → 읽는 중에 살짝 위로 스크롤해도 보이는 글이 지워졌다 다시 써지며 출렁이지 않음
+  const typeLine = vh * 0.85, eraseLine = vh * 1.02;
+  let typed = 0, keep = 0;
+  typers.forEach((t, k) => {
+    const top = t.el.getBoundingClientRect().top;
+    if (top < typeLine) typed = ends[k];
+    if (top < eraseLine) keep = ends[k];
+  });
+  if (typed > target) target = typed;          // 앞으로: 새 문단 쓰기
+  else if (keep < target) target = keep;       // 뒤로: 화면 밖으로 나간 문단만 지우기
 };
 const tick = () => {
   if (shown < target) { const to = reduceMotion ? target : Math.min(target, shown + SPEED); for (; shown < to; shown++) all[shown].classList.add('on'); }
