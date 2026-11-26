@@ -34,8 +34,108 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  const labels = { name: '이름', major: '학과·학번', contact: '연락처', email: '이메일', q1_origin: 'Q1. 광고를 좋아하게 된 순간', q2_edge: 'Q2. 나만의 특출난 점', q3_idea: 'Q3. 세상에 걸고 싶은 시안', q4_worry: 'Q4. 지금 막막한 것', link: '링크' };
+  const labels = { name: '이름', major: '학과·학번', contact: '연락처', email: '이메일', q2_edge: 'Q1. 광고 분야에서 나만의 특출난 점', q4_worry: 'Q2. 지금 막막한 것', link: '링크' };
   const body = Object.entries(data).map(([k, v]) => `■ ${labels[k] || k}\n${v}`).join('\n\n');
   location.href = `mailto:${cfg.fallbackEmail || ''}?subject=${encodeURIComponent('[SYAN 시안] ' + data.name)}&body=${encodeURIComponent(body)}`;
   status.textContent = '메일 앱이 열리면 그대로 보내 주세요.';
 });
+
+// ───────── ATC 무드 인터랙션 ─────────
+const root = document.documentElement;
+
+// 메뉴
+const burger = document.querySelector('.burger');
+const toggleMenu = (open) => {
+  open = open ?? !root.classList.contains('menu-open');
+  root.classList.toggle('menu-open', open);
+  burger.setAttribute('aria-expanded', open);
+};
+burger.addEventListener('click', () => toggleMenu());
+document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', () => toggleMenu(false)));
+addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(false); });
+
+// 스크롤: 헤더 로고 등장
+const onScroll = () => root.classList.toggle('scrolled', scrollY > innerHeight * 0.6);
+addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+
+// 캐러셀 (픽셀 그래픽 + 화살표 + 점 + 캡션, 자동 넘김, 드래그/스와이프)
+document.querySelectorAll('.band').forEach((band) => {
+  const cv = band.querySelector('canvas');
+  const n = cv.dataset.words.split('|').length;
+  const holds = cv.dataset.words.split('|').map((_, k) => Number((cv.dataset.hold || '').split(',')[k]) || 3500);
+  const cycle = holds.reduce((a, b) => a + b, 0);
+  let i = -1, hovering = false, manual = 0, t0 = performance.now(), wasVisible = false;
+  const show = (k) => { k = ((k % n) + n) % n; if (k === i) return; i = k; cv.dispatchEvent(new CustomEvent('pix:go', { detail: k })); };
+  if (cv.dataset.hover) {
+    cv.addEventListener('pointerenter', () => { hovering = true; });
+    cv.addEventListener('pointerleave', () => { hovering = false; t0 = performance.now(); });
+  }
+  let sx = null;
+  cv.addEventListener('pointerdown', (e) => { sx = e.clientX; });
+  addEventListener('pointerup', (e) => {
+    if (sx === null) return;
+    const dx = e.clientX - sx; sx = null;
+    manual += Math.abs(dx) > 40 && dx > 0 ? -1 : 1; t0 = performance.now();
+  });
+  // 매 프레임 한 가지 규칙으로 모양을 정한다 (타이머끼리 꼬이지 않게)
+  const loop = () => {
+    requestAnimationFrame(loop);
+    const r = band.getBoundingClientRect();
+    const visible = r.bottom > 0 && r.top < innerHeight;
+    if (!visible) { wasVisible = false; return; }
+    if (!wasVisible) { wasVisible = true; t0 = performance.now(); manual = 0; }
+    // 문단을 넘기기 전에 꼭 마지막 모양(SYAN)을 보게
+    const past = cv.dataset.end && r.top + r.height / 2 < innerHeight * 0.4;
+    if (past || hovering) return show(n - 1);
+    let e = (performance.now() - t0) % cycle, k = 0;
+    while (e >= holds[k]) { e -= holds[k]; k++; }
+    show(k + manual);
+  };
+  loop();
+});
+
+// ───────── 스크롤 타자기: 스크롤한 만큼 한 글자씩 써진다 ─────────
+const typeTargets = [...document.querySelectorAll('.poem > p, .apply h2, .apply .note')];
+const typers = typeTargets.map((el) => {
+  el.classList.remove('r', 'in'); el.classList.add('typed');
+  const chars = [];
+  const walk = (node) => {
+    [...node.childNodes].forEach((n) => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        [...n.textContent].forEach((c) => {
+          if (/\s/.test(c) && c !== ' ') { frag.append(c); return; }
+          const s = document.createElement('span'); s.className = 'ch'; s.textContent = c;
+          frag.append(s); chars.push(s);
+        });
+        n.replaceWith(frag);
+      } else if (n.nodeType === 1 && n.tagName !== 'BR') walk(n);
+    });
+  };
+  walk(el);
+  return { el, chars, shown: 0 };
+});
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 모든 글자를 위→아래 한 줄로 이어 붙인다. 화면에 들어온 문단까지가 '목표',
+// 실제로 보이는 글자 수는 목표를 향해 한 글자씩 빠르게 따라간다.
+// 위로 스크롤하면 목표가 줄어들어 마지막 글자부터(아래→위) 지워진다.
+const all = typers.flatMap((t) => t.chars);
+const ends = []; { let n = 0; typers.forEach((t) => { n += t.chars.length; ends.push(n); }); }
+let shown = 0, target = 0, lastCur = null;
+const SPEED = 4; // 프레임당 글자 수 (≈ 초당 240자)
+const measure = () => {
+  const line = innerHeight * 0.85;
+  target = 0;
+  typers.forEach((t, k) => { if (t.el.getBoundingClientRect().top < line) target = ends[k]; });
+};
+const tick = () => {
+  if (shown < target) { const to = reduceMotion ? target : Math.min(target, shown + SPEED); for (; shown < to; shown++) all[shown].classList.add('on'); }
+  else if (shown > target) { const to = reduceMotion ? target : Math.max(target, shown - SPEED * 1.5); for (; shown > to; shown--) all[shown - 1].classList.remove('on'); shown = Math.round(shown); }
+  const cur = shown > 0 && shown !== target ? all[shown - 1] : null;
+  if (lastCur !== cur) { lastCur && lastCur.classList.remove('cur'); cur && cur.classList.add('cur'); lastCur = cur; }
+  requestAnimationFrame(tick);
+};
+addEventListener('scroll', measure, { passive: true });
+addEventListener('resize', measure);
+measure(); tick();
