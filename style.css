@@ -1,0 +1,95 @@
+:root {
+  --bg: #ffffff;
+  --ink: #0a0a0a;
+  --mute: #8a8a8a;
+  --line: #e6e6e6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", sans-serif;
+  font-size: 19px;
+  line-height: 1.85;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
+b { font-weight: 800; }
+.dim { color: var(--mute); }
+
+.top {
+  position: fixed; inset: 0 0 auto 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 24px;
+  mix-blend-mode: difference; color: #fff;
+}
+.top a { color: inherit; text-decoration: none; }
+.mark { font-weight: 900; letter-spacing: 0.02em; font-size: 18px; }
+.cta-link { font-size: 15px; font-weight: 600; }
+
+/* hero */
+.hero { position: relative; height: 100svh; min-height: 560px; overflow: hidden; }
+.hero .pix { position: absolute; left: 0; top: 6%; width: 100%; height: 48%; }
+.hero-text { position: absolute; left: 24px; bottom: 12vh; pointer-events: none; }
+.eyebrow { font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mute); }
+h1 { font-size: clamp(56px, 11vw, 150px); line-height: 1; font-weight: 900; letter-spacing: -0.05em; margin: 12px 0 18px; }
+.sub { font-size: 17px; }
+.scroll-hint { position: absolute; right: 24px; bottom: 24px; font-size: 13px; color: var(--mute); }
+
+/* poem */
+.poem, .apply { max-width: 680px; margin: 0 auto; padding: 22vh 24px; }
+.poem > p, .poem .lines li { margin-bottom: 2.2em; }
+.label { font-size: 13px; letter-spacing: 0.14em; color: var(--mute); font-weight: 600; }
+.big { font-size: clamp(28px, 5vw, 44px); line-height: 1.3; font-weight: 800; letter-spacing: -0.04em; }
+.lines { list-style: none; border-left: 2px solid var(--ink); padding-left: 22px; margin-bottom: 2.4em; }
+.lines li { margin-bottom: 1.4em !important; }
+
+.facts { margin: 1em 0 3em; border-top: 1px solid var(--ink); }
+.facts div { display: grid; grid-template-columns: 1fr; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.facts dt { font-size: clamp(38px, 7vw, 64px); font-weight: 900; line-height: 1.05; letter-spacing: -0.05em; }
+.facts dd { font-size: 16px; color: #333; margin-top: 6px; }
+
+.band { height: 70vh; position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.band.tall { height: 90vh; }
+.band .pix { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* reveal */
+.r { opacity: 0; transform: translateY(18px); transition: opacity .9s ease, transform .9s ease; }
+.r.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .r { opacity: 1; transform: none; transition: none; } }
+
+/* apply */
+.apply h2 { font-size: clamp(40px, 8vw, 80px); line-height: 1.05; font-weight: 900; letter-spacing: -0.05em; margin: 18px 0 24px; }
+.note { color: #333; margin-bottom: 48px; }
+form { display: grid; gap: 28px; }
+form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+label { display: grid; gap: 8px; }
+label span { font-size: 14px; font-weight: 700; }
+input, textarea {
+  font: inherit; font-size: 17px; color: var(--ink); background: transparent;
+  border: 0; border-bottom: 1.5px solid var(--ink); border-radius: 0;
+  padding: 8px 0; outline: none; resize: vertical; line-height: 1.6;
+}
+textarea { border: 1.5px solid var(--ink); padding: 12px 14px; }
+input:focus, textarea:focus { background: #f6f6f6; }
+input::placeholder, textarea::placeholder { color: #b5b5b5; }
+.hp { position: absolute; left: -9999px; }
+button {
+  justify-self: start; font: inherit; font-weight: 800; font-size: 18px;
+  background: var(--ink); color: #fff; border: 0; padding: 16px 34px; cursor: pointer;
+}
+button:hover { background: #333; }
+button:disabled { opacity: .5; cursor: wait; }
+.status { min-height: 1.5em; font-size: 15px; }
+
+footer { padding: 60px 24px 40px; border-top: 1px solid var(--ink); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 640px) {
+  body { font-size: 17px; }
+  form .row { grid-template-columns: 1fr; }
+  .poem, .apply { padding: 16vh 16px; }
+  .hero-text { left: 16px; }
+  .band { height: 55vh; }
+}
