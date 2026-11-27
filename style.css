@@ -406,3 +406,9 @@ html.dark ::selection { background: #f4f4f4; color: #0a0a0a; }
   .fixed-art { width: min(58vw, 740px); right: max(1vw, 8px); }
   .poem { z-index: 2; }
 }
+
+/* PC: 본문 글을 조금 더 오른쪽으로 */
+@media (min-width: 1000px) {
+  .poem, .apply, footer { padding-left: max(28px, 11vw) !important; }
+  .apply { padding-right: max(28px, 6vw) !important; }
+}
