@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SYAN — 서강 젊은 광고인 네트워크</title>
-<meta name="description" content="SYAN, Sogang Young Ad Network. 시안을 들고 오는 사람들.">
-<meta property="og:title" content="SYAN — 시안 가져오세요.">
-<meta property="og:description" content="서강 젊은 광고인 네트워크. 광고·마케팅·브랜딩을 진심으로 좋아하는 사람들을 찾습니다.">
+<title>서강젊은광고인네트워크</title>
+<meta name="description" content="당신의 첫 시안을 함께 그릴 사람들. 광고를 진심으로 좋아하는 서강의 젊은 광고인들.">
+<meta property="og:title" content="서강젊은광고인네트워크">
+<meta property="og:description" content="당신의 첫 시안을 함께 그릴 사람들. 광고를 진심으로 좋아하는 서강의 젊은 광고인들.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="style.css">
@@ -24,7 +24,7 @@
 
 <nav class="menu" aria-hidden="true">
   <a href="#hello">글 <em>Story</em></a>
-  <a href="#apply">시안 제출 <em>Apply</em></a>
+  <a href="#apply">시안 제출</a>
 </nav>
 
 
@@ -102,21 +102,31 @@
     <p class="r note">궁금한 점이 있으면 언제든 편하게 연락 주세요.<br>메일 <a href="mailto:idealee@inmybackyard.kr">idealee@inmybackyard.kr</a><br>인스타그램 <a href="https://instagram.com/leekrheon" target="_blank" rel="noopener">@leekrheon</a></p>
 
     <form id="form" class="r card" novalidate>
-      <p class="card-t">시안 제출 <em>Apply</em></p>
-      <label><span>이름</span><input name="name" required autocomplete="name"></label>
-      <div class="row">
+      <p class="card-t">시안 제출</p>
+      <div class="grid2">
+        <label><span>이름</span><input name="name" required autocomplete="name"></label>
+        <label><span>이메일</span><input name="email" type="email" required autocomplete="email"></label>
         <label><span>학과 · 학번</span><input name="major" required placeholder="예) 신문방송 22"></label>
         <label><span>연락처 (전화 또는 인스타)</span><input name="contact" required></label>
       </div>
-      <label><span>이메일</span><input name="email" type="email" required autocomplete="email"></label>
-      <label><span>Q1. 광고 분야에서 나만의 특출난 점 하나</span>
-        <textarea name="q2_edge" rows="4" required placeholder="광고를 준비하는 우리 세대 중에서, 이것만큼은 내가 낫다고 말할 수 있는 것."></textarea></label>
-      <label><span>Q2. 지금 막막한 것</span>
-        <textarea name="q4_worry" rows="4" required placeholder="솔직하게 써도 괜찮습니다."></textarea></label>
+      <label class="long"><span>Q1. 광고 분야에서 나만의 특출난 점 하나 <small class="count" data-for="q2_edge"></small></span>
+        <textarea name="q2_edge" rows="8" required placeholder="광고를 준비하는 우리 세대 중에서, 이것만큼은 내가 낫다고 말할 수 있는 것."></textarea></label>
+      <label class="long"><span>Q2. 지금 막막한 것 <small class="count" data-for="q4_worry"></small></span>
+        <textarea name="q4_worry" rows="8" required placeholder="솔직하게 써도 괜찮습니다."></textarea></label>
       <label><span>포트폴리오 · 계정 링크 (선택)</span><input name="link" type="url" placeholder="https://"></label>
+      <div class="file-field">
+        <span class="file-label">포트폴리오 PDF (선택) <small class="count">10MB 이하</small></span>
+        <label class="drop" for="pdf">
+          <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf">
+          <span class="drop-text"></span>
+        </label>
+      </div>
 
       <input type="text" name="_gotcha" class="hp" tabindex="-1" autocomplete="off">
-      <button type="submit"><span class="ast">✳</span> 시안 제출하기</button>
+      <div class="submit-row">
+        <button type="submit">시안 제출하기</button>
+        <p class="hint"><span class="draft"></span><span class="kbd">Ctrl + Enter로 바로 제출</span></p>
+      </div>
       <p class="status" role="status" aria-live="polite"></p>
     </form>
   </section>

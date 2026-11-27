@@ -268,3 +268,41 @@ html.menu-open .top { background: transparent !important; }
 .ch.cur::after { right: auto; left: calc(100% + 2px); top: .18em; width: .48em; height: 1.08em; background: var(--ink); animation: caret 1s steps(1) infinite; }
 html.typing .ch.cur::after { animation: none; opacity: 1; }
 .ch.cur::after { width: 3px; top: 50%; height: 1.3em; transform: translateY(-50%); left: calc(100% + 2px); }
+
+/* ───────── 지원서: 데스크탑에서 편하게 쓰기 ───────── */
+.card { max-width: 760px !important; padding: 40px 40px 32px; }
+.card .card-t { margin-bottom: 8px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 28px; }
+.card label span { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.count { color: var(--mute); font-weight: 400; font-size: 12px !important; font-variant-numeric: tabular-nums; }
+.card textarea { min-height: 220px; padding: 16px 18px; line-height: 1.75 !important; resize: vertical; overflow: hidden; border: 1px solid var(--line); background: #fcfcfc; transition: border-color .2s, background .2s; }
+.card textarea:focus { border-color: var(--ink); background: #fff; }
+.card input { padding: 10px 0; }
+.card input:focus { border-color: var(--ink); }
+.submit-row { display: grid; gap: 10px; }
+.card button[type=submit] { font-size: 16px !important; }
+.hint { display: flex; justify-content: space-between; gap: 12px; color: var(--mute); font-size: 12px !important; margin: 0; }
+@media (hover: none) { .kbd { display: none; } }
+@media (max-width: 640px) {
+  .card { padding: 24px 18px; }
+  .grid2 { grid-template-columns: 1fr; gap: 22px; }
+  .card textarea { min-height: 180px; }
+}
+/* 지원서: 화면 너비에 맞춰 꽉 차게 */
+.apply > form.card { max-width: none !important; width: 100% !important; box-sizing: border-box; }
+@media (min-width: 1100px) { .grid2 { grid-template-columns: repeat(4, 1fr); } }
+/* PDF 첨부 */
+.file-field { display: grid; gap: 8px; }
+.file-label { font-weight: 700; display: flex; justify-content: space-between; }
+.drop { display: block; border: 1px dashed var(--line); background: #fcfcfc; padding: 26px 18px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+.drop:hover, .drop.over { border-color: var(--ink); background: #fff; }
+.drop.has { border-style: solid; border-color: var(--ink); background: #fff; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop-text { color: #555; }
+.drop u { text-underline-offset: 3px; }
+.drop-text { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; color: #555; }
+.ficon { flex: none; color: var(--ink); }
+.drop.has .drop-text { color: var(--ink); }
+.fname { font-weight: 600 !important; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fsize { color: var(--mute); }
+.card .drop .drop-text { display: inline-flex; justify-content: center; gap: 10px; font-weight: 400; } .card .drop .drop-text span { display: inline; }
