@@ -1,3 +1,9 @@
+// 새로고침하면 항상 맨 위에서 시작 (브라우저의 스크롤 위치 기억, 주소의 #apply 등 무시)
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+window.scrollTo(0, 0);
+addEventListener('load', () => window.scrollTo(0, 0));
+
 // 글이 한 줄씩 떠오르게
 const io = new IntersectionObserver((ents) => {
   ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
@@ -12,12 +18,23 @@ const cfg = window.SYAN_CONFIG || {};
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!form.checkValidity()) { form.reportValidity(); return; }
+  form.querySelectorAll('.miss').forEach((el) => el.classList.remove('miss'));
+  const missing = [...form.querySelectorAll('[required]')].filter((el) => !el.value.trim() || (el.type === 'email' && !el.checkValidity()));
+  if (missing.length) {
+    missing.forEach((el) => el.classList.add('miss'));
+    status.textContent = '빠짐없이 작성해주세요 :)';
+    missing[0].focus({ preventScroll: true });
+    missing[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
   const data = Object.fromEntries(new FormData(form));
   if (data._gotcha) return;
   delete data._gotcha;
   delete data.pdf;
-  const pdf = pdfInput.files[0];
+  if (portMode === 'pdf') data.link = '';
+  const pdf = portMode === 'pdf' ? pdfInput.files[0] : null;
+  const version = subs().length + 1;
+  data.version = `${version}차`;
   if (pdf && !pdfOk(pdf)) return;
 
   // 구글 시트(Apps Script 웹 앱)로 보내기. Apps Script는 CORS 응답을 주지 않아 no-cors로 보낸다.
@@ -26,8 +43,8 @@ form.addEventListener('submit', async (e) => {
     try {
       if (pdf) data.file = { name: pdf.name, type: 'application/pdf', data: await toBase64(pdf) };
       await fetch(cfg.sheetEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
-      form.reset(); clearDraft(); refreshForm(); showPdf();
-      status.textContent = '시안 잘 받았습니다. 한 편씩 소중히 읽고 연락드릴게요.';
+      saveSub(version, data, pdf); form.reset(); clearDraft(); refreshForm(); showPdf(); setMode('link'); updateVersionUI();
+      status.textContent = `${version}차 시안 잘 받았습니다. 한 편씩 소중히 읽고 연락드릴게요.`;
     } catch {
       status.textContent = '전송에 실패했어요. 잠시 후 다시 시도하거나 contact@sogangsyan.team 로 보내 주세요.';
     } finally { btn.disabled = false; }
@@ -195,12 +212,11 @@ try {
   const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
   if (d) { fields.forEach((f) => { if (d[f.name]) f.value = d[f.name]; }); draftNote.textContent = '쓰던 글을 불러왔어요'; }
 } catch {}
-form.addEventListener('input', (e) => { if (e.target.tagName === 'TEXTAREA') { grow(e.target); count(e.target); } saveDraft(); });
+form.addEventListener('input', (e) => { e.target.classList.remove('miss'); if (status.textContent.startsWith('빠짐없이')) status.textContent = ''; if (e.target.tagName === 'TEXTAREA') { grow(e.target); count(e.target); } saveDraft(); });
 addEventListener('resize', refreshForm);
 refreshForm();
 // Ctrl(⌘) + Enter로 제출
 form.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); form.requestSubmit(); } });
-if (/Mac/.test(navigator.platform)) { const k = form.querySelector('.kbd'); if (k) k.textContent = '⌘ + Enter로 바로 제출'; }
 
 
 // ───────── 포트폴리오 PDF 첨부 ─────────
@@ -233,3 +249,71 @@ drop.addEventListener('drop', (e) => {
   if (!pdfOk(f)) return;
   const dt = new DataTransfer(); dt.items.add(f); pdfInput.files = dt.files; status.textContent = ''; showPdf();
 });
+
+
+// ───────── 포트폴리오: 링크 / PDF 선택 ─────────
+let portMode = 'link';
+function setMode(m) {
+  portMode = m;
+  form.querySelectorAll('.seg button').forEach((b) => { const on = b.dataset.mode === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  form.querySelectorAll('.port-pane').forEach((p) => { p.hidden = p.dataset.pane !== m; });
+}
+form.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+// ───────── 내가 제출한 시안: 1차, 2차, 3차… (이 브라우저에만 보관) ─────────
+const SUB_KEY = 'syan-submissions';
+function subs() { try { return JSON.parse(localStorage.getItem(SUB_KEY) || '[]'); } catch { return []; } }
+function saveSub(v, data, pdf) {
+  const list = subs();
+  const { file, ...rest } = data;
+  list.push({ v, at: new Date().toISOString(), data: rest, pdfName: pdf ? pdf.name : '' });
+  try { localStorage.setItem(SUB_KEY, JSON.stringify(list)); } catch {}
+}
+const pill = document.getElementById('pill');
+const mineLink = document.querySelector('.mine-link');
+const submitBtn = form.querySelector('.submit-btn');
+function updateVersionUI() {
+  const n = subs().length;
+  pill.textContent = n ? `${n}차 시안_hwp` : '제출 전_hwp';
+  pill.setAttribute('href', n ? '#mine' : '#apply');
+  mineLink.hidden = !n;
+  submitBtn.textContent = `${n + 1}차 시안 제출하기`;
+}
+updateVersionUI();
+
+const dlg = document.getElementById('mine');
+const esc = (t) => String(t || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let viewing = 0;
+function renderMine() {
+  const list = subs(); if (!list.length) return;
+  const it = list[viewing];
+  dlg.querySelector('.mine-title').textContent = `${it.v}차 시안_hwp`;
+  dlg.querySelector('.mine-tabs').innerHTML = list.map((x, i) => `<button type="button" class="soft${i === viewing ? ' on' : ''}" data-i="${i}">${x.v}차</button>`).join('');
+  dlg.querySelectorAll('.mine-tabs button').forEach((b) => b.onclick = () => { viewing = +b.dataset.i; renderMine(); });
+  const d = it.data, when = new Date(it.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  dlg.querySelector('.mine-body').innerHTML = `
+    <p class="mine-meta">${esc(when)} 제출</p>
+    <dl>
+      <dt>이름</dt><dd>${esc(d.name)}</dd><dt>이메일</dt><dd>${esc(d.email)}</dd>
+      <dt>학과 · 학번</dt><dd>${esc(d.major)}</dd><dt>연락처</dt><dd>${esc(d.contact)}</dd>
+      <dt>Q1. 광고 분야에서 나의 잠재력과 역량</dt><dd class="long">${esc(d.q2_edge)}</dd>
+      <dt>Q2. 지금 막막한 것</dt><dd class="long">${esc(d.q4_worry)}</dd>
+      <dt>포트폴리오</dt><dd>${it.pdfName ? 'PDF · ' + esc(it.pdfName) : (d.link ? esc(d.link) : '없음')}</dd>
+    </dl>`;
+}
+function openMine() { if (!subs().length) { location.hash = '#apply'; return; } viewing = subs().length - 1; renderMine(); dlg.showModal(); }
+pill.addEventListener('click', (e) => { if (subs().length) { e.preventDefault(); openMine(); } });
+mineLink.addEventListener('click', (e) => { e.preventDefault(); toggleMenu(false); openMine(); });
+dlg.querySelector('.mine-close').onclick = () => dlg.close();
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+dlg.querySelector('.mine-edit').onclick = () => {
+  const d = subs()[viewing].data;
+  ['name', 'email', 'major', 'contact', 'q2_edge', 'q4_worry', 'link'].forEach((k) => { if (form.elements[k]) form.elements[k].value = d[k] || ''; });
+  setMode(d.link ? 'link' : 'link');
+  refreshForm(); saveDraft(); dlg.close();
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  status.textContent = `고쳐서 제출하면 ${subs().length + 1}차 시안으로 접수됩니다.`;
+};
+
+
+// (검은 화면 반전은 뺐음)

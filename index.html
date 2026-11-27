@@ -16,7 +16,7 @@
 <header class="top">
   <div class="top-l">
     <button class="burger" aria-label="메뉴" aria-expanded="false"><i></i><i></i><i></i></button>
-    <a href="#apply" class="pill">시안 제출</a>
+    <a href="#apply" class="pill" id="pill">제출 전_hwp</a>
   </div>
   <a href="#" class="mark"><img src="assets/main.svg" alt="서강젊은광고인네트워크"></a>
   <span></span>
@@ -25,8 +25,23 @@
 <nav class="menu" aria-hidden="true">
   <a href="#hello">글 <em>Story</em></a>
   <a href="#apply">시안 제출</a>
+  <a href="#mine" class="mine-link" hidden>내 시안 보기</a>
 </nav>
 
+<dialog id="mine" class="mine">
+  <div class="mine-head">
+    <p class="mine-title"></p>
+    <button type="button" class="mine-close" aria-label="닫기">닫기</button>
+  </div>
+  <div class="mine-tabs"></div>
+  <div class="mine-body"></div>
+  <div class="mine-foot">
+    <button type="button" class="soft primary mine-edit">수정해서 다시 제출하기</button>
+  </div>
+</dialog>
+
+
+<div class="fixed-art" aria-hidden="true"><canvas></canvas></div>
 
 <main>
 
@@ -73,7 +88,7 @@
 
   <!-- 5. SYAN은 -->
   <section id="syan" class="poem">
-    <p class="r">SYAN이 앞으로 어떤 모습이 될지는<br>함께할 분들과 같이 만들어 가고 싶습니다.<br>다만 한 가지는 분명히 믿고 있습니다.</p>
+    <p class="r" id="turn">SYAN이 앞으로 어떤 모습이 될지는<br>함께할 분들과 같이 만들어 가고 싶습니다.<br>다만 한 가지는 분명히 믿고 있습니다.</p>
     <p class="r">다만 광고에 정말 뛰어난 감각을 가진 사람들이 여럿 모여 있는 것만으로도,<br>부싯돌처럼 서로 부딪히고 튀기다 보면 불꽃이 일고,<br>그 작은 스파크가 세상을 조금은 바꿀 수 있지 않을까 생각합니다.</p>
     <p class="r">우리끼리 재밌는 이야기를 나누다 보면,<br>분명 뭔가 좋은 게 오지 않을까요.</p>
     <p class="r">그래서 SYAN은 대외활동이 아닙니다.<br>동아리도 아니고, 같이 프로젝트를 하자고 모이는 팀도 아닙니다.</p>
@@ -109,23 +124,32 @@
         <label><span>학과 · 학번</span><input name="major" required placeholder="예) 신문방송 22"></label>
         <label><span>연락처 (전화 또는 인스타)</span><input name="contact" required></label>
       </div>
-      <label class="long"><span>Q1. 광고 분야에서 나만의 특출난 점 하나 <small class="count" data-for="q2_edge"></small></span>
-        <textarea name="q2_edge" rows="8" required placeholder="광고를 준비하는 우리 세대 중에서, 이것만큼은 내가 낫다고 말할 수 있는 것."></textarea></label>
+      <label class="long"><span>Q1. 광고 분야에서 나의 잠재력과 역량 <small class="count" data-for="q2_edge"></small></span>
+        <textarea name="q2_edge" rows="8" required placeholder="아직 완성되지 않아도 괜찮습니다. 광고 분야에서 내가 가진 잠재력, 그리고 그걸 보여 줄 수 있는 나만의 역량을 들려주세요."></textarea></label>
       <label class="long"><span>Q2. 지금 막막한 것 <small class="count" data-for="q4_worry"></small></span>
         <textarea name="q4_worry" rows="8" required placeholder="솔직하게 써도 괜찮습니다."></textarea></label>
-      <label><span>포트폴리오 · 계정 링크 (선택)</span><input name="link" type="url" placeholder="https://"></label>
-      <div class="file-field">
-        <span class="file-label">포트폴리오 PDF (선택) <small class="count">10MB 이하</small></span>
-        <label class="drop" for="pdf">
-          <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf">
-          <span class="drop-text"></span>
-        </label>
+      <div class="port">
+        <span class="file-label">포트폴리오 (선택)</span>
+        <div class="seg" role="tablist">
+          <button type="button" class="soft on" data-mode="link" role="tab" aria-selected="true">링크로 제출</button>
+          <button type="button" class="soft" data-mode="pdf" role="tab" aria-selected="false">PDF로 제출</button>
+        </div>
+        <div class="port-pane" data-pane="link">
+          <input name="link" type="url" placeholder="https:// 노션, 드라이브, 인스타 등 포트폴리오 주소">
+        </div>
+        <div class="port-pane" data-pane="pdf" hidden>
+          <label class="drop" for="pdf">
+            <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf">
+            <span class="drop-text"></span>
+          </label>
+          <small class="count">PDF 1개, 10MB 이하</small>
+        </div>
       </div>
 
       <input type="text" name="_gotcha" class="hp" tabindex="-1" autocomplete="off">
       <div class="submit-row">
-        <button type="submit">시안 제출하기</button>
-        <p class="hint"><span class="draft"></span><span class="kbd">Ctrl + Enter로 바로 제출</span></p>
+        <button type="submit" class="soft primary submit-btn">1차 시안 제출하기</button>
+        <p class="hint"><span class="draft"></span></p>
       </div>
       <p class="status" role="status" aria-live="polite"></p>
     </form>
@@ -144,5 +168,6 @@
 <script src="config.js"></script>
 <script src="pixels.js"></script>
 <script src="main.js"></script>
+<script src="art.js"></script>
 </body>
 </html>

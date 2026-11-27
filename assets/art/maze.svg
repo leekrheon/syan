@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- 미로: 막막함 -->
+  <g fill="none" stroke="#000" stroke-width="22" stroke-linecap="square">
+    <path d="M40 40 H360 V360 H100"/>
+    <path d="M40 40 V360"/>
+    <path d="M100 100 H300 V300 H160"/>
+    <path d="M100 100 V300"/>
+    <path d="M160 160 H240 V240"/>
+    <path d="M160 160 V220"/>
+  </g>
+  <circle cx="200" cy="200" r="14" fill="#000"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- 톡방: 말풍선 두 개 -->
+  <path d="M40 70 h200 a30 30 0 0 1 30 30 v90 a30 30 0 0 1 -30 30 h-120 l-50 40 v-40 h-30 a30 30 0 0 1 -30 -30 v-90 a30 30 0 0 1 30 -30 z" fill="#000"/>
+  <circle cx="95" cy="145" r="14" fill="#fff"/><circle cx="140" cy="145" r="14" fill="#fff"/><circle cx="185" cy="145" r="14" fill="#fff"/>
+  <path d="M175 200 h165 a30 30 0 0 1 30 30 v80 a30 30 0 0 1 -30 30 h-15 v38 l-48 -38 h-102 a30 30 0 0 1 -30 -30 v-80 a30 30 0 0 1 30 -30 z" fill="#000"/>
+  <rect x="215" y="245" width="115" height="16" rx="8" fill="#fff"/><rect x="215" y="282" width="80" height="16" rx="8" fill="#fff"/>
+</svg>

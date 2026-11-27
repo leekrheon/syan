@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- 성장 그래프: 이력 -->
+  <rect x="50" y="270" width="50" height="80" fill="#000"/>
+  <rect x="125" y="215" width="50" height="135" fill="#000"/>
+  <rect x="200" y="160" width="50" height="190" fill="#000"/>
+  <rect x="275" y="95" width="50" height="255" fill="#000"/>
+  <path d="M55 225 L150 160 L215 185 L330 60" fill="none" stroke="#000" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M290 55 L340 50 L335 100" fill="none" stroke="#000" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="40" y="360" width="300" height="12" fill="#000"/>
+</svg>

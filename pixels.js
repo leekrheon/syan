@@ -51,7 +51,8 @@
   }
 
   function Field(canvas, img) {
-    const words = (canvas.dataset.words || 'SYAN').split('|');
+    // data-words가 없고 그림만 있으면 그림 하나만 (오른쪽 일러스트용)
+    const words = canvas.dataset.words ? canvas.dataset.words.split('|') : (img ? [] : ['SYAN']);
     const mode = canvas.dataset.mode || 'cycle';
     const ctx = canvas.getContext('2d');
     let W = 0, H = 0, dpr = 1, step = 8, parts = [], shapes = [], cur = -1, visible = false;
@@ -148,7 +149,8 @@
         // 픽셀마다 검정 ↔ 회색을 천천히 오가며 색이 흐른다 (물결처럼 위치에 따라 박자가 어긋남)
         const flow = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.0011 * (0.6 + p.seed * 0.9) + p.seed * 40 + (p.tx / W) * 5 - (p.ty / H) * 3);
         const silver = Math.min(1, flow * 0.85 + near * 0.3);
-        const base = [10 + 150 * silver, 10 + 154 * silver, 12 + 160 * silver];      // 검정 → #a0a4ac
+        const inkA = ink.split(',').map(Number), grey = [150, 155, 165];
+        const base = inkA.map((v, k) => v + (grey[k] - v) * silver);      // 기본색 → 은회색
         const hi = [214, 219, 226];                                                  // 밝은 은색
         const c = base.map((v, k) => Math.round(v + (hi[k] - v) * tw));
         ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${a})`;
@@ -176,7 +178,63 @@
     requestAnimationFrame(frame);
   }
 
+  // ───────── 돌아가는 픽셀 지구 ─────────
+  function Globe(canvas) {
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, dpr = 1, R = 0, step = 6, pts = [], visible = false, spin = 0, speed = 0.0045, boost = 0;
+    const mouse = { x: -1e4, y: -1e4 };
+    // 경선(세로) + 위선(가로) + 대륙 대신 점점이 흩어진 '도시 불빛'
+    function build() {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      W = canvas.clientWidth; H = canvas.clientHeight; if (!W || !H) return;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      R = Math.min(W, H) * 0.42; step = Math.max(4, Math.round(R / 34));
+      pts = [];
+      const d = step / R;                              // 픽셀 간격만큼의 각도
+      for (let lon = 0; lon < 360; lon += 20)          // 경선 18개
+        for (let la = -Math.PI / 2; la <= Math.PI / 2; la += d) pts.push([la, lon * Math.PI / 180, 1]);
+      for (let lat = -60; lat <= 60; lat += 30)        // 위선 5개
+        for (let lo = 0; lo < Math.PI * 2; lo += d / Math.cos(lat * Math.PI / 180)) pts.push([lat * Math.PI / 180, lo, 1]);
+      let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+      for (let i = 0; i < 260; i++) pts.push([Math.asin(rnd() * 2 - 1) * 0.85, rnd() * Math.PI * 2, 0.7]);
+      pts.forEach((p) => (p[3] = rnd()));
+    }
+    function frame(t) {
+      requestAnimationFrame(frame);
+      if (!visible || !pts.length) return;
+      boost *= 0.95; spin += speed + boost;
+      let ink = (getComputedStyle(canvas).color.match(/\d+/g) || [10, 10, 10]).slice(0, 3);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      const cx = W / 2, cy = H / 2, tilt = 0.38, ct = Math.cos(tilt), st = Math.sin(tilt);
+      const sz = Math.max(2, Math.round(step * 0.8));
+      for (const [lat, lon, w, sd] of pts) {
+        const L = lon + spin;
+        let x = Math.cos(lat) * Math.sin(L), y = Math.sin(lat), z = Math.cos(lat) * Math.cos(L);
+        const y2 = y * ct - z * st, z2 = y * st + z * ct; y = y2; z = z2;
+        let px = cx + x * R, py = cy - y * R;
+        const dx = px - mouse.x, dy = py - mouse.y, md = Math.hypot(dx, dy);
+        if (md < 90) { const f = (1 - md / 90) * 14; px += (dx / (md || 1)) * f; py += (dy / (md || 1)) * f; }
+        if (z < -0.05) { if (w < 1) continue; ctx.fillStyle = `rgba(${ink},0.08)`; }
+        else {
+          const flow = 0.5 + 0.5 * Math.sin(t * 0.0011 * (0.6 + sd * 0.9) + sd * 40 + x * 3);
+          const g = Math.round(150 * flow * (0.4 + 0.6 * (1 - z)));
+          const gk = g / 150, ik = ink.map(Number), gy = [150, 155, 165];
+          ctx.fillStyle = `rgba(${ik.map((v, k) => Math.round(v + (gy[k] - v) * gk)).join(',')},${(0.35 + 0.65 * z) * w})`;
+        }
+        ctx.fillRect(Math.round(px - sz / 2), Math.round(py - sz / 2), sz, sz);
+      }
+    }
+    const move = (e) => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; };
+    addEventListener('pointermove', move, { passive: true });
+    canvas.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; });
+    canvas.addEventListener('click', () => { boost += 0.06; });       // 누르면 휙 돈다
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(canvas);
+    let lw = 0; new ResizeObserver(() => { if (canvas.clientWidth !== lw) { lw = canvas.clientWidth; build(); } }).observe(canvas);
+    requestAnimationFrame(frame);
+  }
+
   const start = () => document.querySelectorAll('canvas.pix').forEach((cv) => {
+    if (cv.dataset.globe) return Globe(cv);
     if (!cv.dataset.src) return Field(cv);
     const im = new Image();
     im.onload = () => Field(cv, im);

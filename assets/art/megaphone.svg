@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- 확성기: 광고 좋아하세요? -->
+  <path d="M60 165 h50 l150 -85 v240 l-150 -85 h-50 z" fill="#000"/>
+  <rect x="85" y="235" width="40" height="80" rx="10" fill="#000"/>
+  <path d="M285 150 q40 50 0 100" fill="none" stroke="#000" stroke-width="20" stroke-linecap="round"/>
+  <path d="M315 115 q75 85 0 170" fill="none" stroke="#000" stroke-width="20" stroke-linecap="round"/>
+</svg>
