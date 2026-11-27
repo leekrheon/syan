@@ -21,9 +21,9 @@ const cfg = window.SYAN_CONFIG || {};
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   form.querySelectorAll('.miss').forEach((el) => el.classList.remove('miss'));
-  const missing = [...form.querySelectorAll('[required]')].filter((el) => (el.type === 'checkbox' ? !el.checked : !el.value.trim()) || (el.type === 'email' && !el.checkValidity()));
+  const missing = [...form.querySelectorAll('[required]')].filter((el) => (el.type === 'radio' ? !form.querySelector(`input[name="${el.name}"]:checked`) : el.type === 'checkbox' ? !el.checked : !el.value.trim()) || (el.type === 'email' && !el.checkValidity()));
   if (missing.length) {
-    missing.forEach((el) => el.classList.add('miss'));
+    missing.forEach((el) => (el.type === 'radio' ? el.closest('.pos-grid') : el).classList.add('miss'));
     status.textContent = missing.some((el) => el.name === 'consent') && missing.length === 1 ? T('개인정보 수집·이용에 동의해 주세요 :)', 'Please agree to the privacy notice :)') : T('빠짐없이 작성해주세요 :)', 'Please fill in every field :)');
     missing[0].focus({ preventScroll: true });
     missing[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -34,12 +34,13 @@ form.addEventListener('submit', async (e) => {
   delete data._gotcha;
   delete data.pdf;
   data.consent = form.elements.consent.checked ? 'Y' : '';
+  data.position = (form.querySelector('input[name=position]:checked') || {}).value || '';
   data.consentAt = new Date().toISOString();
   if (portMode === 'pdf') data.link = '';
   if (data.link && !/^https?:\/\//i.test(data.link.trim())) { status.textContent = T('포트폴리오 링크는 https:// 로 시작하는 주소로 적어 주세요.', 'Please use a portfolio link that starts with https://'); return; }
   const pdf = portMode === 'pdf' ? pdfInput.files[0] : null;
   const version = subs().length + 1;
-  data.version = `${version}차`;
+  data.version = `${version}차${data.position ? ' · ' + data.position : ''}`;   // 시트 '차수' 칸에 포지션도 함께 기록
   if (pdf && !pdfOk(pdf)) return;
 
   // 구글 시트(Apps Script 웹 앱)로 보내기. Apps Script는 CORS 응답을 주지 않아 no-cors로 보낸다.
@@ -101,7 +102,7 @@ addEventListener('scroll', onScroll, { passive: true }); onScroll();
 // 캐러셀 (픽셀 그래픽 + 화살표 + 점 + 캡션, 자동 넘김, 드래그/스와이프)
 document.querySelectorAll('.band, .hero').forEach((band) => {
   const cv = band.querySelector('canvas');
-  const n = cv.pixCount ? cv.pixCount() : cv.dataset.words.split('|').length + (cv.dataset.src ? 1 : 0);
+  const n = (cv.pixCount && cv.pixCount()) || (cv.dataset.words || '').split('|').filter(Boolean).length + (cv.dataset.src ? 1 : 0) || 1;
   const holds = Array.from({ length: n }, (_, k) => k).map((k) => Number((cv.dataset.hold || '').split(',')[k]) || 3500);
   const cycle = holds.reduce((a, b) => a + b, 0);
   let i = -1, hovering = false, manual = 0, t0 = performance.now(), wasVisible = false;
@@ -195,7 +196,7 @@ measure(); tick();
 
 // ───────── 지원서 쓰기 편하게 ─────────
 const DRAFT_KEY = 'syan-draft';
-const fields = [...form.querySelectorAll('input[name]:not(.hp):not([type=file]):not([type=checkbox]), textarea')];
+const fields = [...form.querySelectorAll('input[name]:not(.hp):not([type=file]):not([type=checkbox]):not([type=radio]), textarea')];
 const draftNote = form.querySelector('.draft');
 // 답변 칸이 글 길이에 맞춰 자동으로 늘어남 (스크롤 없이 한눈에)
 const grow = (t) => { t.style.height = 'auto'; t.style.height = Math.max(t.scrollHeight + 2, 0) + 'px'; };
@@ -282,7 +283,7 @@ function updateVersionUI() {
   pill.textContent = n ? T(`${n}차 시안_hwp`, `draft_${n}.hwp`) : T('제출 전_hwp', 'not_sent.hwp');
   pill.setAttribute('href', n ? '#mine' : '#apply');
   mineLink.hidden = !n;
-  submitBtn.textContent = T(`${n + 1}차 시안 제출하기`, `Submit draft ${n + 1}`);
+  submitBtn.textContent = T('시안 제출하기', 'Submit your draft');
 }
 updateVersionUI();
 
@@ -299,10 +300,10 @@ function renderMine() {
   dlg.querySelector('.mine-body').innerHTML = `
     <p class="mine-meta">${esc(when)} ${T('제출', 'submitted')}</p>
     <dl>
-      <dt>${T('이름', 'Name')}</dt><dd>${esc(d.name)}</dd><dt>${T('이메일', 'Email')}</dt><dd>${esc(d.email)}</dd>
+      <dt>${T('포지션', 'Position')}</dt><dd>${esc(d.position || '-')}</dd><dt>${T('이름', 'Name')}</dt><dd>${esc(d.name)}</dd><dt>${T('이메일', 'Email')}</dt><dd>${esc(d.email)}</dd>
       <dt>${T('학과 · 학번', 'Major · Year')}</dt><dd>${esc(d.major)}</dd><dt>${T('연락처', 'Contact')}</dt><dd>${esc(d.contact)}</dd>
       <dt>${T('Q1. 광고 분야에서 나의 잠재력과 역량', 'Q1. Your potential and strengths in advertising')}</dt><dd class="long">${esc(d.q2_edge)}</dd>
-      <dt>${T('Q2. 지금 막막한 것', 'Q2. What feels stuck right now')}</dt><dd class="long">${esc(d.q4_worry)}</dd>
+      <dt>${T('Q2. 이 분야에서 요즘 하고 있는 고민', 'Q2. What you’re thinking through in this field')}</dt><dd class="long">${esc(d.q4_worry)}</dd>
       <dt>${T('포트폴리오', 'Portfolio')}</dt><dd>${it.pdfName ? 'PDF · ' + esc(it.pdfName) : (d.link ? esc(d.link) : T('없음', 'None'))}</dd>
     </dl>`;
 }
@@ -314,6 +315,7 @@ dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 dlg.querySelector('.mine-edit').onclick = () => {
   const d = subs()[viewing].data;
   ['name', 'email', 'major', 'contact', 'q2_edge', 'q4_worry', 'link'].forEach((k) => { if (form.elements[k]) form.elements[k].value = d[k] || ''; });
+  form.querySelectorAll('input[name=position]').forEach((r) => { r.checked = r.value === d.position; });
   setMode(d.link ? 'link' : 'link');
   refreshForm(); saveDraft(); dlg.close();
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -330,3 +332,6 @@ document.querySelector('.mine-wipe').onclick = () => {
   try { localStorage.removeItem('syan-submissions'); localStorage.removeItem('syan-draft'); } catch {}
   dlg.close(); form.reset(); refreshForm(); updateVersionUI(); status.textContent = T('이 기기의 기록을 지웠습니다.', 'Cleared the records on this device.');
 };
+
+// 포지션 고르면 빨간 표시 해제
+form.querySelectorAll('input[name=position]').forEach((r) => r.addEventListener('change', () => r.closest('.pos-grid').classList.remove('miss')));

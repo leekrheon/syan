@@ -90,8 +90,9 @@
     }
 
     function setShape(k) {
-      k = Math.max(0, Math.min(shapes.length - 1, k));
-      if (k === cur || !shapes.length) return;
+      if (!shapes.length || !Number.isFinite(k)) return;   // 아직 그림이 준비 안 됐거나 잘못된 번호면 무시
+      k = Math.max(0, Math.min(shapes.length - 1, Math.round(k)));
+      if (k === cur || !shapes[k]) return;
       cur = k;
       canvas.dispatchEvent(new CustomEvent('pix:change', { detail: k }));
       const s = shapes[k];
