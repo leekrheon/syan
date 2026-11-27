@@ -1,3 +1,5 @@
+const EN = document.documentElement.lang === 'en';
+const T = (ko, en) => (EN ? en : ko);
 // 새로고침하면 항상 맨 위에서 시작 (브라우저의 스크롤 위치 기억, 주소의 #apply 등 무시)
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -19,10 +21,10 @@ const cfg = window.SYAN_CONFIG || {};
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   form.querySelectorAll('.miss').forEach((el) => el.classList.remove('miss'));
-  const missing = [...form.querySelectorAll('[required]')].filter((el) => !el.value.trim() || (el.type === 'email' && !el.checkValidity()));
+  const missing = [...form.querySelectorAll('[required]')].filter((el) => (el.type === 'checkbox' ? !el.checked : !el.value.trim()) || (el.type === 'email' && !el.checkValidity()));
   if (missing.length) {
     missing.forEach((el) => el.classList.add('miss'));
-    status.textContent = '빠짐없이 작성해주세요 :)';
+    status.textContent = missing.some((el) => el.name === 'consent') && missing.length === 1 ? T('개인정보 수집·이용에 동의해 주세요 :)', 'Please agree to the privacy notice :)') : T('빠짐없이 작성해주세요 :)', 'Please fill in every field :)');
     missing[0].focus({ preventScroll: true });
     missing[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
@@ -31,7 +33,10 @@ form.addEventListener('submit', async (e) => {
   if (data._gotcha) return;
   delete data._gotcha;
   delete data.pdf;
+  data.consent = form.elements.consent.checked ? 'Y' : '';
+  data.consentAt = new Date().toISOString();
   if (portMode === 'pdf') data.link = '';
+  if (data.link && !/^https?:\/\//i.test(data.link.trim())) { status.textContent = T('포트폴리오 링크는 https:// 로 시작하는 주소로 적어 주세요.', 'Please use a portfolio link that starts with https://'); return; }
   const pdf = portMode === 'pdf' ? pdfInput.files[0] : null;
   const version = subs().length + 1;
   data.version = `${version}차`;
@@ -39,14 +44,14 @@ form.addEventListener('submit', async (e) => {
 
   // 구글 시트(Apps Script 웹 앱)로 보내기. Apps Script는 CORS 응답을 주지 않아 no-cors로 보낸다.
   if (cfg.sheetEndpoint) {
-    btn.disabled = true; status.textContent = pdf ? 'PDF 올리는 중… 잠시만 기다려 주세요' : '보내는 중…';
+    btn.disabled = true; status.textContent = pdf ? T('PDF 올리는 중… 잠시만 기다려 주세요', 'Uploading your PDF…') : T('보내는 중…', 'Sending…');
     try {
       if (pdf) data.file = { name: pdf.name, type: 'application/pdf', data: await toBase64(pdf) };
       await fetch(cfg.sheetEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
       saveSub(version, data, pdf); form.reset(); clearDraft(); refreshForm(); showPdf(); setMode('link'); updateVersionUI();
-      status.textContent = `${version}차 시안 잘 받았습니다. 한 편씩 소중히 읽고 연락드릴게요.`;
+      status.textContent = T(`${version}차 시안 잘 받았습니다. 한 편씩 소중히 읽고 연락드릴게요.`, `Draft ${version} received. I'll read every one carefully and get back to you.`);
     } catch {
-      status.textContent = '전송에 실패했어요. 잠시 후 다시 시도하거나 contact@sogangsyan.team 로 보내 주세요.';
+      status.textContent = T('전송에 실패했어요. 잠시 후 다시 시도하거나 contact@sogangsyan.team 로 보내 주세요.', 'Sending failed. Please try again, or email contact@sogangsyan.team');
     } finally { btn.disabled = false; }
     return;
   }
@@ -82,9 +87,9 @@ const burger = document.querySelector('.burger');
 const toggleMenu = (open) => {
   open = open ?? !root.classList.contains('menu-open');
   root.classList.toggle('menu-open', open);
-  burger.setAttribute('aria-expanded', open);
+  if (burger) burger.setAttribute('aria-expanded', open);
 };
-burger.addEventListener('click', () => toggleMenu());
+if (burger) burger.addEventListener('click', () => toggleMenu());
 document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', () => toggleMenu(false)));
 addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(false); });
 
@@ -190,12 +195,12 @@ measure(); tick();
 
 // ───────── 지원서 쓰기 편하게 ─────────
 const DRAFT_KEY = 'syan-draft';
-const fields = [...form.querySelectorAll('input[name]:not(.hp):not([type=file]), textarea')];
+const fields = [...form.querySelectorAll('input[name]:not(.hp):not([type=file]):not([type=checkbox]), textarea')];
 const draftNote = form.querySelector('.draft');
 // 답변 칸이 글 길이에 맞춰 자동으로 늘어남 (스크롤 없이 한눈에)
 const grow = (t) => { t.style.height = 'auto'; t.style.height = Math.max(t.scrollHeight + 2, 0) + 'px'; };
 // 글자 수
-const count = (t) => { const c = form.querySelector(`.count[data-for="${t.name}"]`); if (c) c.textContent = `${t.value.length.toLocaleString()}자`; };
+const count = (t) => { const c = form.querySelector(`.count[data-for="${t.name}"]`); if (c) c.textContent = T(`${t.value.length.toLocaleString()}자`, `${t.value.length.toLocaleString()} chars`); };
 function refreshForm() { form.querySelectorAll('textarea').forEach((t) => { grow(t); count(t); }); }
 // 임시 저장: 이 브라우저에만 저장되어, 새로고침하거나 창을 닫았다 와도 쓰던 글이 남아 있음
 let saveT;
@@ -204,15 +209,15 @@ const saveDraft = () => {
   saveT = setTimeout(() => {
     const d = Object.fromEntries(fields.map((f) => [f.name, f.value]));
     if (!Object.values(d).some((v) => v.trim())) return clearDraft();
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); draftNote.textContent = '임시 저장됨 · ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }); } catch {}
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); draftNote.textContent = T('임시 저장됨 · ', 'Draft saved · ') + new Date().toLocaleTimeString(EN ? 'en-US' : 'ko-KR', { hour: '2-digit', minute: '2-digit' }); } catch {}
   }, 500);
 };
 function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} draftNote.textContent = ''; }
 try {
   const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
-  if (d) { fields.forEach((f) => { if (d[f.name]) f.value = d[f.name]; }); draftNote.textContent = '쓰던 글을 불러왔어요'; }
+  if (d) { fields.forEach((f) => { if (d[f.name]) f.value = d[f.name]; }); draftNote.textContent = T('쓰던 글을 불러왔어요', 'Your draft was restored'); }
 } catch {}
-form.addEventListener('input', (e) => { e.target.classList.remove('miss'); if (status.textContent.startsWith('빠짐없이')) status.textContent = ''; if (e.target.tagName === 'TEXTAREA') { grow(e.target); count(e.target); } saveDraft(); });
+form.addEventListener('input', (e) => { e.target.classList.remove('miss'); if ((status.textContent.startsWith('빠짐없이') || status.textContent.startsWith('Please fill'))) status.textContent = ''; if (e.target.tagName === 'TEXTAREA') { grow(e.target); count(e.target); } saveDraft(); });
 addEventListener('resize', refreshForm);
 refreshForm();
 // Ctrl(⌘) + Enter로 제출
@@ -226,16 +231,16 @@ const dropText = form.querySelector('.drop-text');
 const MAX_PDF = 10 * 1024 * 1024;
 const PDF_ICON = '<svg class="ficon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.75h8.5L19.25 7.5v13.75H6z"/><path d="M14.25 2.75V7.75h5"/><path d="M9 13.5h6M9 16.5h4"/></svg>';
 function pdfOk(f) {
-  if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') { status.textContent = 'PDF 파일만 올릴 수 있어요.'; return false; }
-  if (f.size > MAX_PDF) { status.textContent = 'PDF가 10MB를 넘어요. 용량을 줄이거나 위 링크 칸에 올려 주세요.'; return false; }
+  if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') { status.textContent = T('PDF 파일만 올릴 수 있어요.', 'Only PDF files can be uploaded.'); return false; }
+  if (f.size > MAX_PDF) { status.textContent = T('PDF가 10MB를 넘어요. 용량을 줄이거나 위 링크 칸에 올려 주세요.', 'The PDF is over 10MB. Please shrink it or share a link instead.'); return false; }
   return true;
 }
 function showPdf() {
   const f = pdfInput.files[0];
   drop.classList.toggle('has', !!f);
   dropText.innerHTML = f
-    ? `${PDF_ICON}<span class="fname">${f.name.replace(/[<>&]/g, '')}</span><span class="fsize">${(f.size / 1048576).toFixed(1)}MB</span><u>바꾸기</u>`
-    : `${PDF_ICON}<span>PDF를 끌어다 놓거나 <u>눌러서 고르기</u></span>`;
+    ? `${PDF_ICON}<span class="fname">${f.name.replace(/[<>&]/g, '')}</span><span class="fsize">${(f.size / 1048576).toFixed(1)}MB</span><u>${T('바꾸기', 'Change')}</u>`
+    : `${PDF_ICON}<span>${T('PDF를 끌어다 놓거나 <u>눌러서 고르기</u>', 'Drop a PDF here or <u>choose a file</u>')}</span>`;
 }
 function toBase64(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
@@ -274,10 +279,10 @@ const mineLink = document.querySelector('.mine-link');
 const submitBtn = form.querySelector('.submit-btn');
 function updateVersionUI() {
   const n = subs().length;
-  pill.textContent = n ? `${n}차 시안_hwp` : '제출 전_hwp';
+  pill.textContent = n ? T(`${n}차 시안_hwp`, `draft_${n}.hwp`) : T('제출 전_hwp', 'not_sent.hwp');
   pill.setAttribute('href', n ? '#mine' : '#apply');
   mineLink.hidden = !n;
-  submitBtn.textContent = `${n + 1}차 시안 제출하기`;
+  submitBtn.textContent = T(`${n + 1}차 시안 제출하기`, `Submit draft ${n + 1}`);
 }
 updateVersionUI();
 
@@ -287,18 +292,18 @@ let viewing = 0;
 function renderMine() {
   const list = subs(); if (!list.length) return;
   const it = list[viewing];
-  dlg.querySelector('.mine-title').textContent = `${it.v}차 시안_hwp`;
-  dlg.querySelector('.mine-tabs').innerHTML = list.map((x, i) => `<button type="button" class="soft${i === viewing ? ' on' : ''}" data-i="${i}">${x.v}차</button>`).join('');
+  dlg.querySelector('.mine-title').textContent = T(`${it.v}차 시안_hwp`, `draft_${it.v}.hwp`);
+  dlg.querySelector('.mine-tabs').innerHTML = list.map((x, i) => `<button type="button" class="soft${i === viewing ? ' on' : ''}" data-i="${i}">${T(x.v + '차', 'Draft ' + x.v)}</button>`).join('');
   dlg.querySelectorAll('.mine-tabs button').forEach((b) => b.onclick = () => { viewing = +b.dataset.i; renderMine(); });
-  const d = it.data, when = new Date(it.at).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const d = it.data, when = new Date(it.at).toLocaleString(EN ? 'en-US' : 'ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   dlg.querySelector('.mine-body').innerHTML = `
-    <p class="mine-meta">${esc(when)} 제출</p>
+    <p class="mine-meta">${esc(when)} ${T('제출', 'submitted')}</p>
     <dl>
-      <dt>이름</dt><dd>${esc(d.name)}</dd><dt>이메일</dt><dd>${esc(d.email)}</dd>
-      <dt>학과 · 학번</dt><dd>${esc(d.major)}</dd><dt>연락처</dt><dd>${esc(d.contact)}</dd>
-      <dt>Q1. 광고 분야에서 나의 잠재력과 역량</dt><dd class="long">${esc(d.q2_edge)}</dd>
-      <dt>Q2. 지금 막막한 것</dt><dd class="long">${esc(d.q4_worry)}</dd>
-      <dt>포트폴리오</dt><dd>${it.pdfName ? 'PDF · ' + esc(it.pdfName) : (d.link ? esc(d.link) : '없음')}</dd>
+      <dt>${T('이름', 'Name')}</dt><dd>${esc(d.name)}</dd><dt>${T('이메일', 'Email')}</dt><dd>${esc(d.email)}</dd>
+      <dt>${T('학과 · 학번', 'Major · Year')}</dt><dd>${esc(d.major)}</dd><dt>${T('연락처', 'Contact')}</dt><dd>${esc(d.contact)}</dd>
+      <dt>${T('Q1. 광고 분야에서 나의 잠재력과 역량', 'Q1. Your potential and strengths in advertising')}</dt><dd class="long">${esc(d.q2_edge)}</dd>
+      <dt>${T('Q2. 지금 막막한 것', 'Q2. What feels stuck right now')}</dt><dd class="long">${esc(d.q4_worry)}</dd>
+      <dt>${T('포트폴리오', 'Portfolio')}</dt><dd>${it.pdfName ? 'PDF · ' + esc(it.pdfName) : (d.link ? esc(d.link) : T('없음', 'None'))}</dd>
     </dl>`;
 }
 function openMine() { if (!subs().length) { location.hash = '#apply'; return; } viewing = subs().length - 1; renderMine(); dlg.showModal(); }
@@ -312,8 +317,16 @@ dlg.querySelector('.mine-edit').onclick = () => {
   setMode(d.link ? 'link' : 'link');
   refreshForm(); saveDraft(); dlg.close();
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  status.textContent = `고쳐서 제출하면 ${subs().length + 1}차 시안으로 접수됩니다.`;
+  status.textContent = T(`고쳐서 제출하면 ${subs().length + 1}차 시안으로 접수됩니다.`, `Edit and submit — it will be received as draft ${subs().length + 1}.`);
 };
 
 
 // (검은 화면 반전은 뺐음)
+
+
+// 이 기기에 남은 기록(임시 저장, 제출 기록) 지우기 — 공용 PC 대비
+document.querySelector('.mine-wipe').onclick = () => {
+  if (!confirm(T('이 기기에 남은 임시 저장 글과 제출 기록을 지울까요? (이미 제출한 시안은 그대로 접수되어 있습니다)', 'Clear the saved draft and submission history on this device? (Submitted drafts stay received.)'))) return;
+  try { localStorage.removeItem('syan-submissions'); localStorage.removeItem('syan-draft'); } catch {}
+  dlg.close(); form.reset(); refreshForm(); updateVersionUI(); status.textContent = T('이 기기의 기록을 지웠습니다.', 'Cleared the records on this device.');
+};

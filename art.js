@@ -22,7 +22,8 @@
   const BOX = 0.4;            // 캔버스 대비 픽토그램 크기 (주변은 흩어질 공간)
   let W = 0, H = 0, dpr = 1, S = 0, step = 6, N = 0;
   let shapes = [];            // 각 픽토그램의 목표 좌표 [N][2] (지구는 매 프레임 계산)
-  let globe3d = [];           // 지구용 3D 점
+  let globe3d = [];           // 지구용 3D 점 [위도, 경도, 진하기]
+  let landMask = null;        // 육지 지도 픽셀
   let parts = [];             // {seed, dx, dy, ox, oy}
   let imgs = [];
   let P = 0, sp = 0, vel = 0; // 목표 진행도, 스프링 위치/속도
@@ -50,14 +51,25 @@
   function buildGlobe() {
     globe3d = [];
     const R = S * BOX * 0.5, d = step / R;
-    for (let lon = 0; lon < 360; lon += 20) for (let la = -Math.PI / 2; la <= Math.PI / 2; la += d) globe3d.push([la, lon * Math.PI / 180]);
-    for (let lat = -60; lat <= 60; lat += 30) for (let lo = 0; lo < Math.PI * 2; lo += d / Math.cos(lat * Math.PI / 180)) globe3d.push([lat * Math.PI / 180, lo]);
+    // 실제 지구: 구 표면에 고르게 점을 깔고(피보나치), 육지 지도(land.png)에 닿는 점만 대륙으로
+    const count = Math.round((4 * Math.PI * R * R) / (step * step)), golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < count; i++) {
+      const yv = 1 - (2 * (i + 0.5)) / count, lat = Math.asin(yv), lon = (i * golden) % (Math.PI * 2);
+      let land = true;
+      if (landMask) {
+        const u = Math.floor((((lon * 180 / Math.PI) % 360) / 360) * landMask.w) % landMask.w;
+        const v = Math.min(landMask.h - 1, Math.floor(((90 - lat * 180 / Math.PI) / 180) * landMask.h));
+        land = landMask.d[(v * landMask.w + u) * 4] > 127;
+      }
+      if (land) globe3d.push([lat, lon - Math.PI, 1]);
+      else if (i % 5 === 0) globe3d.push([lat, lon - Math.PI, 0.16]);   // 바다는 아주 옅고 듬성듬성
+    }
   }
   function globeAt(i, spin, out) {
     const [lat, lon] = globe3d[i % globe3d.length], L = lon + spin, R = S * BOX * 0.5, tilt = 0.38;
     let x = Math.cos(lat) * Math.sin(L), y = Math.sin(lat), z = Math.cos(lat) * Math.cos(L);
     const y2 = y * Math.cos(tilt) - z * Math.sin(tilt), z2 = y * Math.sin(tilt) + z * Math.cos(tilt);
-    out[0] = W / 2 + x * R; out[1] = H / 2 - y2 * R; out[2] = z2; return out;
+    out[0] = W / 2 + x * R; out[1] = H / 2 - y2 * R; out[2] = z2; out[3] = globe3d[i % globe3d.length][2]; return out;
   }
 
   function build() {
@@ -99,7 +111,7 @@
   }
 
   const sm = (x) => x * x * (3 - 2 * x);
-  const tmpA = [0, 0, 1], tmpB = [0, 0, 1];
+  const tmpA = [0, 0, 1, 1], tmpB = [0, 0, 1, 1];
   function frame(t) {
     requestAnimationFrame(frame);
     if (!N || !wrap.classList.contains('on')) { P = target(); return; }
@@ -129,7 +141,8 @@
       // 지구의 뒷면은 희미하게
       let alpha = 1;
       const zA = shapes[a] ? 1 : tmpA[2], zB = shapes[b] ? 1 : tmpB[2];
-      const z = zA + (zB - zA) * ee; if (z < -0.05) alpha = 0.08; else if (!shapes[a] || !shapes[b]) alpha = 0.35 + 0.65 * z;
+      const z = zA + (zB - zA) * ee; if (z < -0.05) alpha = 0.05; else if (!shapes[a] || !shapes[b]) alpha = 0.35 + 0.65 * z;
+      const wA = shapes[a] ? 1 : tmpA[3], wB = shapes[b] ? 1 : tmpB[3]; alpha *= wA + (wB - wA) * ee;
       const flow = reduced ? 0.4 : 0.5 + 0.5 * Math.sin(t * 0.0011 * (0.6 + p.seed * 0.9) + p.seed * 40 + (x / W) * 4);
       const c = ink.map((v, j) => Math.round(v + (grey[j] - v) * flow * 0.85));
       const far = Math.hypot(p.dx, p.dy) * burst;   // 멀리 흩어질수록 희미하게 사라지듯
@@ -140,7 +153,9 @@
 
   addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; }, { passive: true });
   let lw = 0;
-  Promise.all(STEPS.map((s) => (s.src ? load(s.src) : null))).then((r) => {
+  Promise.all([...STEPS.map((s) => (s.src ? load(s.src) : null)), load('assets/art/land.png')]).then((r) => {
+    const lm = r.pop();
+    if (lm) { const c = document.createElement('canvas'); c.width = lm.naturalWidth; c.height = lm.naturalHeight; const g = c.getContext('2d'); g.drawImage(lm, 0, 0); landMask = { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; }
     imgs = r; build(); lw = cv.clientWidth;
     new ResizeObserver(() => { if (cv.clientWidth !== lw) { lw = cv.clientWidth; build(); } }).observe(cv);
     requestAnimationFrame(frame);
