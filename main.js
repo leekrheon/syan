@@ -17,6 +17,19 @@ form.addEventListener('submit', async (e) => {
   if (data._gotcha) return;
   delete data._gotcha;
 
+  // 구글 시트(Apps Script 웹 앱)로 보내기. Apps Script는 CORS 응답을 주지 않아 no-cors로 보낸다.
+  if (cfg.sheetEndpoint) {
+    btn.disabled = true; status.textContent = '보내는 중…';
+    try {
+      await fetch(cfg.sheetEndpoint, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
+      form.reset();
+      status.textContent = '시안 잘 받았습니다. 한 편씩 소중히 읽고 연락드릴게요.';
+    } catch {
+      status.textContent = '전송에 실패했어요. 잠시 후 다시 시도하거나 idealee@inmybackyard.kr 로 보내 주세요.';
+    } finally { btn.disabled = false; }
+    return;
+  }
+
   if (cfg.formEndpoint) {
     btn.disabled = true; status.textContent = '보내는 중…';
     try {
