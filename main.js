@@ -162,7 +162,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 위로 스크롤하면 목표가 줄어들어 마지막 글자부터(아래→위) 지워진다.
 const all = typers.flatMap((t) => t.chars);
 const ends = []; { let n = 0; typers.forEach((t) => { n += t.chars.length; ends.push(n); }); }
-let shown = 0, target = 0, lastCur = null;
+let shown = 0, target = 0, lastCur = null, holdUntil = 0;
 const SPEED = 4; // 프레임당 글자 수 (≈ 초당 240자)
 // 폰 주소창이 나타났다 사라져도 기준선이 흔들리지 않도록, 화면 높이는 가로폭이 바뀔 때만 갱신
 let vh = document.documentElement.clientHeight, vw = innerWidth;
@@ -181,8 +181,17 @@ const measure = () => {
   else if (keep < target) target = keep;       // 뒤로: 화면 밖으로 나간 문단만 지우기
 };
 const tick = () => {
-  if (shown < target) { const to = reduceMotion ? target : Math.min(target, shown + SPEED); for (; shown < to; shown++) all[shown].classList.add('on'); }
-  else if (shown > target) { const to = reduceMotion ? target : Math.max(target, shown - SPEED * 1.5); for (; shown > to; shown--) all[shown - 1].classList.remove('on'); shown = Math.round(shown); }
+  if (shown < target && !reduceMotion && performance.now() < holdUntil) { /* 잠깐 멈춤 */ }
+  else if (shown < target) {
+    const to = reduceMotion ? target : Math.min(target, shown + SPEED);
+    for (; shown < to; shown++) {
+      const c = all[shown], par = c.parentElement;
+      if (!reduceMotion && par.dataset.pause && !c.dataset.waited) { c.dataset.waited = 1; holdUntil = performance.now() + +par.dataset.pause; break; }
+      c.classList.add('on');
+      if (!reduceMotion && par.classList.contains('slow')) { shown++; holdUntil = performance.now() + 90; break; }
+    }
+  }
+  else if (shown > target) { const to = reduceMotion ? target : Math.max(target, shown - SPEED * 1.5); for (; shown > to; shown--) { all[shown - 1].classList.remove('on'); delete all[shown - 1].dataset.waited; } shown = Math.round(shown); }
   // 마지막으로 써진 글자 뒤에 커서. 쓰는 중엔 켜져 있고, 문장이 끝나 멈추면 깜빡인다
   const cur = shown > 0 ? all[shown - 1] : null;
   if (lastCur !== cur) { lastCur && lastCur.classList.remove('cur'); cur && cur.classList.add('cur'); lastCur = cur; }

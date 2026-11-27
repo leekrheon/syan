@@ -474,3 +474,25 @@ form.card > *, .grid2 > *, .pos-grid > *, .port-pane > * { min-width: 0; }
 @media (max-width: 640px) { .grid2, .pos-grid { grid-template-columns: minmax(0, 1fr); } }
 .pos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 form.card input:not([type=checkbox]):not([type=radio]):not([type=file]), form.card textarea { width: 100%; max-width: 100%; }
+
+/* 모바일: 입력칸 눌러도 확대되지 않게 (iOS는 16px 미만이면 자동 확대) */
+@media (max-width: 900px), (pointer: coarse) {
+  input, textarea, select, .card input, .card textarea { font-size: 16px !important; }
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* 지원 대상 */
+.elig { max-width: 760px; margin: 8px 0 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 0; }
+.elig dl { display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 12px 18px; margin: 0; }
+.elig dt { font-weight: 700; }
+.elig dd { margin: 0; color: var(--mute); line-height: 1.7; }
+
+/* 포지션: 체크 대신 블럭이 검게 */
+.pos-opt::after, .pos-opt:has(input:checked)::after { content: none !important; display: none !important; }
+.card .pos-opt:has(input:checked) { background: var(--ink) !important; border-color: var(--ink) !important; box-shadow: none !important; }
+.card .pos-opt:has(input:checked) b, .card .pos-opt:has(input:checked) small { color: #fff !important; }
+.card .pos-opt b, .card .pos-opt small { transition: color .2s; }
+.card .pos-opt { transition: background .2s, border-color .2s; }
+
+.elig ul { margin: 0; padding-left: 1.1em; }
+.elig li { margin: 0; }
