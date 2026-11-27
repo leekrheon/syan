@@ -29,7 +29,7 @@ form.addEventListener('submit', async (e) => {
       form.reset(); clearDraft(); refreshForm(); showPdf();
       status.textContent = '시안 잘 받았습니다. 한 편씩 소중히 읽고 연락드릴게요.';
     } catch {
-      status.textContent = '전송에 실패했어요. 잠시 후 다시 시도하거나 idealee@inmybackyard.kr 로 보내 주세요.';
+      status.textContent = '전송에 실패했어요. 잠시 후 다시 시도하거나 contact@sogangsyan.team 로 보내 주세요.';
     } finally { btn.disabled = false; }
     return;
   }

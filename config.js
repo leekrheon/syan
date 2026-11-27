@@ -4,5 +4,5 @@
 window.SYAN_CONFIG = {
   sheetEndpoint: 'https://script.google.com/macros/s/AKfycbwyUH2C-fiqDMNOqGHSKzo0aimzC6MDIIVF8nQGVh7zLcdNESUvcL7CZkeJKdexEZ6B/exec',
   formEndpoint: '',
-  fallbackEmail: 'idealee@inmybackyard.kr', // 위 주소가 비어 있을 때 메일 앱으로 받을 주소
+  fallbackEmail: 'contact@sogangsyan.team', // 위 주소가 비어 있을 때 메일 앱으로 받을 주소
 };
